@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body{font-family:'Poppins',sans-serif;background:#000;color:#e9fbff;margin:0;}
+header{display:flex;align-items:center;gap:12px;padding:12px;background:#111;}
+header .logo{font-family:Orbitron,sans-serif;font-weight:700;font-size:28px;color:#00f0ff;}
+header h1{margin:0;font-size:20px;color:#fff;}
+.container-custom{background:#111;padding:20px;border-radius:12px;margin:20px;}
+table{color:#e9fbff;}
+.thumb{width:80px;height:60px;border-radius:6px;object-fit:cover;}
+.status-pending{background:#ffd86b;color:#111;padding:5px 10px;border-radius:10px;}
+.status-progress{background:#00f0ff;color:#111;padding:5px 10px;border-radius:10px;}
+.status-resolved{background:#39ff8a;color:#111;padding:5px 10px;border-radius:10px;}
+.table-container{max-height:500px;overflow-y:auto;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">BIET</div>
+  <h1>Admin Dashboard</h1>
+</header>
+
+<div class="container container-custom">
+  <div class="mb-3">
+    <button id="download-json" class="btn btn-success btn-sm me-2">Download JSON</button>
+    <input type="file" id="upload-json" accept=".json" class="form-control form-control-sm w-auto d-inline"/>
+  </div>
+
+  <div class="table-container">
+    <table class="table table-striped table-hover align-middle">
+      <thead class="table-dark">
+        <tr><th>Name</th><th>Email</th><th>Issue</th><th>Location</th><th>Description</th><th>Status</th><th>Attach</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="complaint-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let complaints = JSON.parse(localStorage.getItem('complaints'))||[];
+const tableBody=document.getElementById('complaint-table');
+const downloadBtn=document.getElementById('download-json');
+const uploadInput=document.getElementById('upload-json');
+
+function render(){ tableBody.innerHTML=''; complaints.slice().reverse().forEach(c=>{const tr=document.createElement('tr');
+tr.innerHTML=`<td>${c.name||'Anonymous'}</td><td>${c.email||'-'}</td><td>${c.type}</td><td>${c.location||'-'}</td><td>${c.desc}</td>
+<td><span class="status-${c.status.toLowerCase().replace(' ','-')}">${c.status}</span></td>
+<td>${c.file?`<img src="${c.file}" class="thumb">`:'-'}</td>
+<td><button class='btn btn-sm btn-warning me-1' onclick="updateStatus('${c.id}')">Next</button>
+<button class='btn btn-sm btn-danger' onclick="removeComplaint('${c.id}')">Delete</button></td>`; tableBody.appendChild(tr);});
+localStorage.setItem('complaints',JSON.stringify(complaints));}
+
+function updateStatus(id){const c=complaints.find(x=>x.id===id); if(!c)return; if(c.status==='Pending')c.status='In Progress'; else if(c.status==='In Progress')c.status='Resolved'; else c.status='Pending'; render();}
+function removeComplaint(id){complaints=complaints.filter(x=>x.id!==id); render();}
+
+downloadBtn.addEventListener('click',()=>{const blob=new Blob([JSON.stringify(complaints,null,2)],{type:"application/json"});const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='complaints.json'; a.click(); URL.revokeObjectURL(a.href); alert("Downloaded!");});
+
+uploadInput.addEventListener('change',e=>{const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{try{const data=JSON.parse(r.result); if(Array.isArray(data)) complaints=data; render(); alert("Restored!");}catch(err){alert("Invalid JSON!");}}; r.readAsText(file); uploadInput.value='';});
+render();
+</script>
+
+</body>
+</html>
